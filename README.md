@@ -6,16 +6,36 @@ It runs on **macOS and Linux** using Matplotlib's available graphical backend; t
 
 ## Requirements and installation
 
-- Python 3.10 or later
-- NumPy
-- Matplotlib
-- A graphical Matplotlib backend for the interactive application (for example, a working Qt or macOS backend)
+- Python **3.10 or later**
+- NumPy **2.0 or later**
+- Matplotlib **3.9 or later**
+- A working graphical Matplotlib backend to display the interactive window
 
-Install the packages in your preferred Python environment:
+The project includes a `requirements.txt` file with the two direct dependencies:
+
+```text
+numpy>=2.0
+matplotlib>=3.9
+```
+
+From the project directory, create and activate a virtual environment (recommended):
+
+**macOS or Linux:**
 
 ```bash
-python3 -m pip install numpy matplotlib
+python3 -m venv venv
+source venv/bin/activate
+python3 -m pip install -r requirements.txt
 ```
+
+You may also install into an existing Python environment with
+`python3 -m pip install -r requirements.txt`.
+
+The application does not select or configure a platform-specific GUI backend.
+Matplotlib uses an available backend on your system. On a headless machine,
+unit tests can run without a graphical display, but the explorer itself needs
+an interactive display and backend. If the GUI does not open, check your local
+Matplotlib backend installation.
 
 ## Run the explorer
 
@@ -48,7 +68,7 @@ Click inside the figure window to give it keyboard focus. The instructions at th
 | **r** or **Home** | Restart component-by-component synthesis for the current input |
 | **q** or **Esc** | Close the figure |
 
-**Default:** 128 equally spaced samples on **[-2, 2)**, a period of 4, a centered rectangle extending from -1 to 1, and no components added yet.
+**Default:** 128 equally spaced samples on **[-2, 2)**, a period of 4, a centered rectangle extending from -1 to 1, and no Fourier components added yet.
 
 The available sample counts are **32, 64, 128, 256, and 512**. Changing the sample count recomputes the transform and resets the synthesis stage. Changing function type, position, width, period count, pulse separation, or sine frequency recomputes the transform while retaining the current stage. The dense-curve toggle does not change the Fourier coefficients.
 
@@ -99,7 +119,7 @@ Shifting a signal offers a particularly useful demonstration: its magnitude spec
 
 ## Unit tests
 
-The companion file **`test_fourier_series_explorer.py`** uses Python's built-in `unittest` module. Place it beside `fourier_series_explorer.py` and run:
+The companion file **`test_fourier_series_explorer.py`** uses Python's built-in `unittest` module; no extra testing packages are required. From the project directory, run:
 
 ```bash
 python3 -m unittest -v test_fourier_series_explorer.py
@@ -113,7 +133,7 @@ python3 -m unittest discover -v
 
 The application keeps signal definitions in a compact central registry, enforces sample-dependent parameter limits in one normalization function, and separates keyboard state changes from plot refreshes. Cached harmonic lines are updated only when the sampled signal changes. These changes do not introduce any new dependencies.
 
-The tests use Matplotlib's **Agg** (noninteractive) backend, so they can run without displaying a window. They check:
+The tests select Matplotlib's **Agg** (noninteractive) backend, so they can run without displaying a window. They check:
 
 - Exact sampled reconstruction for all seven shapes at 32, 64, 128, 256, and 512 samples.
 - Magnitude preservation and the expected phase change under integer-sample translation.
@@ -124,19 +144,24 @@ The tests use Matplotlib's **Agg** (noninteractive) backend, so they can run wit
 - Gaussian width and smooth periodization, sawtooth periodicity and harmonics, spectral changes from pulse separation, pulse-train periodicity/duty cycle/harmonic zeros, and error handling for unknown functions.
 - Function-registry consistency, parameter normalization across sample counts, GUI-independent keyboard actions, and unchanged previously plotted harmonic artists during ordinary stepping.
 
-The tests exercise mathematics and noninteractive Matplotlib event handling. For a full check after GUI or layout changes, also launch the application and try the keyboard controls on the actual macOS or Linux desktop.
+The tests exercise mathematics and noninteractive Matplotlib event handling. They do **not** validate native GUI appearance, keyboard focus, or backend-specific window behavior.
+
+### Interactive smoke test
+
+After changes to keyboard handling or figure layout, run `python3 fourier_series_explorer.py` on the target desktop and verify that you can select functions `1`–`7`, step forward and backward, shift and resize a signal, adjust sample count with `+`/`-`, toggle `d`, reset with `r`, and quit with `q`. For functions `6` and `7`, also check `[`/`]`. Click the figure first to ensure keyboard focus.
 
 ## Project files
 
 ```text
 fourier_series_explorer.py       # interactive application
-test_fourier_series_explorer.py  # regression tests
-requirements.txt                 # module requirements file
-LICENSE                          # license file
-README.md                        # this guide
+test_fourier_series_explorer.py  # unittest regression suite
+requirements.txt                # NumPy and Matplotlib version requirements
+README.md                       # project documentation
+LICENSE                         # GNU GPL v3 license
+.gitignore                      # local and generated files excluded from Git
 ```
 
-The explorer is intentionally a **single-file application** with no custom GUI framework or operating-system-specific dependencies.
+The application is intentionally a **single Python source file**, separate from its tests. It relies only on NumPy and Matplotlib, with no custom GUI toolkit or OS-specific screen management.
 
 ## License
 
