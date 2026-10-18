@@ -1,0 +1,12 @@
+__pycache__
+*.pyc
+*.ORIG
+*.SAVE
+*.spec
+build/
+dist/
+.DS_Store
+
+venv/
+
+headshots/
