@@ -131,7 +131,7 @@ Or discover all test modules in the current directory:
 python3 -m unittest discover -v
 ```
 
-The application keeps signal definitions in a compact central registry, enforces sample-dependent parameter limits in one normalization function, and separates keyboard state changes from plot refreshes. Cached harmonic lines are updated only when the sampled signal changes. These changes do not introduce any new dependencies.
+The application keeps signal definitions in a compact central registry, enforces sample-dependent parameter limits in one normalization function, and separates keyboard state changes from plot refreshes. Cached harmonic lines are updated only when the sampled signal changes.
 
 The tests select Matplotlib's **Agg** (noninteractive) backend, so they can run without displaying a window. They check:
 

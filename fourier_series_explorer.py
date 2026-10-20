@@ -202,20 +202,26 @@ class FourierExplorer:
         self.dense_x = np.linspace(X_MIN, X_MAX, DENSE_POINTS)
         self.reanalyze()
 
-        self.fig, axes = plt.subplots(3, 2, figsize=(10.5, 6.8),
-                                      constrained_layout=True)
-        self.fig.get_layout_engine().set(w_pad=0.025, h_pad=0.025,
-                                         wspace=0.045, hspace=0.045,
-                                         rect=(0, 0.035, 1, 0.905))
+        # Match the companion Fourier Filtering Explorer's natural window
+        # size and header layout. Window sizing stays backend-independent.
+        self.fig, axes = plt.subplots(3, 2, figsize=(14, 9.1))
+        self.fig.subplots_adjust(top=0.79, bottom=0.09, hspace=0.72,
+                                 wspace=0.30, left=0.085, right=0.97)
+        self.fig.canvas.manager.set_window_title('Fourier Series Explorer')
         (self.ax_input, self.ax_mag, self.ax_phase,
          self.ax_current, self.ax_previous, self.ax_sum) = axes.flat
         self.axes = axes.flat
-        self.fig.suptitle(
-            'Fourier Explorer | Space/Backspace: terms • ←/→: shift • W/w: size/freq • '
-            '[/]: gap/period • +/-: samples • 1–7: shape • d: dense • r: reset • q: quit',
-            fontsize=9, y=0.996)
-        self.status = self.fig.text(0.5, 0.006, '', ha='center', fontsize=8,
-                                    weight='bold')
+        self.fig.text(0.5, 0.975, 'Fourier Series Explorer',
+                      ha='center', va='top', fontsize=19, weight='bold')
+        self.instructions = self.fig.text(
+            0.5, 0.931,
+            '1–7 function  |  Space/Backspace terms  |  ←/→ shift  |  '
+            'w/W size/frequency  |  [/] gap/period\n'
+            '+/- samples  |  d dense reconstruction  |  r reset  |  q quit',
+            ha='center', va='top', fontsize=10, linespacing=1.6,
+            family='monospace')
+        self.status = self.fig.text(0.5, 0.023, '', ha='center', va='center',
+                                    family='monospace', fontsize=10)
         for ax in axes.flat:
             ax.grid(alpha=0.20)
             ax.tick_params(labelsize=8)
@@ -224,9 +230,9 @@ class FourierExplorer:
             ax.title.set_fontsize(9)
         for ax in (self.ax_input, self.ax_current, self.ax_previous, self.ax_sum):
             ax.set(xlim=(X_MIN, X_MAX), xlabel='x', ylabel='f(x)')
-        self.ax_mag.set(xlabel='Frequency (cycles per unit x)',
+        self.ax_mag.set(xlabel='Frequency (cycles per x-unit)',
                         ylabel=r'$|\mathcal{F}\{f(x)\}|$')
-        self.ax_phase.set(xlabel='Frequency (cycles per unit x)',
+        self.ax_phase.set(xlabel='Frequency (cycles per x-unit)',
                           ylabel='Phase (radians)',
                           ylim=(-np.pi - 0.25, np.pi + 0.25),
                           yticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
@@ -289,7 +295,7 @@ class FourierExplorer:
         else:
             desc = (f'pulse width={2 * round(s.pulse_half_width / dx) * dx:g}'
                     f', separation≈{2 * round(s.pulse_separation / (2 * dx)) * dx:g}')
-        self.ax_input.set_title(f'Input: {s.kind} | {desc} | shift={shift:+.4g}')
+        self.ax_input.set_title(f'{s.kind.capitalize()} | {desc} | shift={shift:+.4g}')
         f = np.fft.fftfreq(n, d=dx)
         order = np.fft.fftshift(np.arange(n))
         mag = np.abs(self.coeff[order])
@@ -301,8 +307,8 @@ class FourierExplorer:
         self.ax_phase.set_xlim(*limits)
         good = significant_coefficients(self.coeff)[order]
         self.phase_dots.set_data(f[order][good], np.angle(self.coeff[order][good]))
-        self.ax_mag.set_title(r'Magnitude $|\mathcal{F}\{f(x)\}|$  •  normalized DFT bins')
-        self.ax_phase.set_title(r'Phase $\angle\mathcal{F}\{f(x)\}$  •  undefined at zero magnitude')
+        self.ax_mag.set_title(r'Magnitude $|\mathcal{F}\{f(x)\}|$  (normalized)')
+        self.ax_phase.set_title(r'Phase $\angle\mathcal{F}\{f(x)\}$  (undefined at zero magnitude)')
         extent = max(1.15, float(np.max(np.abs(self.signal))) * 1.2)
         self.ax_input.set_ylim(-extent if s.kind in ('sine', 'sawtooth') else -0.2, extent)
         self.ax_sum.set_ylim(-extent if s.kind in ('sine', 'sawtooth') else -max(0.2, extent * 0.2), extent)
@@ -345,24 +351,30 @@ class FourierExplorer:
             note = ' | Nyquist (unpaired)' if k == n // 2 else ''
             if amp < 1e-11:
                 note += ' | zero amplitude'
-            self.ax_current.set_title(f'Current: harmonic {k}/{n // 2} | '
-                                      f'f={k / PERIOD:g} | amplitude={amp:.4g}{note}')
+            self.ax_current.set_title(f'Current harmonic {k}/{n // 2} | '
+                                      f'f={k / PERIOD:g} | Amplitude={amp:.4g}{note}')
         self.ax_previous.set_title(f'Previously included components: {max(0, k + 1)}')
         reconstructed = self.partial[k] if k >= 0 else np.zeros(n)
         error = float(np.max(np.abs(self.signal - reconstructed)))
-        self.ax_sum.set_title(f'Cumulative reconstruction | max sample error = {error:.3e}')
+        self.ax_sum.set_title('Cumulative reconstruction')
         self.dense_line.set_visible(s.dense)
         if s.dense:
             self.dense_line.set_data(self.dense_x, dense_partial(self.coeff, k, self.dense_x))
+        # Match the Filtering Explorer's 10-point monospace status typography
+        # and generous double-space padding around each separator.
+        progress = f'{k + 1}/{n // 2 + 1}'
+        error_text = f'{error:.2e}'
+        dense_text = 'ON' if s.dense else 'OFF'
         if k == n // 2:
-            self.status.set_text(f'COMPLETE — N={n}, {n // 2 + 1}/{n // 2 + 1} components '
-                                 f'(DC through Nyquist); max sample error {error:.2e}'
-                                 f' | dense: {"ON" if s.dense else "OFF"}')
+            self.status.set_text(
+                f'COMPLETE  |  N = {n}  |  Components = {progress}  |  '
+                f'Max sample error = {error_text}  |  Dense = {dense_text}')
         else:
-            self.status.set_text(f'N={n} samples | Fourier stage '
-                                 f'{k if k >= 0 else "none"}/{n // 2} '
-                                 f'({k + 1}/{n // 2 + 1} components)'
-                                 f' | dense: {"ON" if s.dense else "OFF"}')
+            stage = str(k) if k >= 0 else 'none'
+            self.status.set_text(
+                f'N = {n}  |  Stage = {stage}/{n // 2}  |  '
+                f'Components = {progress}  |  Max sample error = {error_text}'
+                f'  |  Dense = {dense_text}')
         self.fig.canvas.draw_idle()
 
     @staticmethod
